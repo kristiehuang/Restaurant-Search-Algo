@@ -2,7 +2,22 @@ def search(query, ranking=lambda r: -r.stars):
     results = [r for r in Restaurant.all if query in r.name]
     return sorted(results, key=ranking)
 def reviewed_both(r, s):
-    return len([x for x in r.reviewers if x in s.reviewers])
+    #return len([x for x in r.reviewers if x in s.reviewers]) #slow version
+    return fast_overlap(r.reviewers, s.reviewers)
+
+def fast_overlap(s, t):
+    i, j, count = 0, 0, 0
+    while i < len(s) and j < len(t):
+        if s[i] == t[j]:
+            count += 1
+            i += 1
+            j += 1
+        elif s[i] < t[j]:
+            i += 1
+        else:
+            j+=1
+    return count
+
 
 class Restaurant:
     all = []
@@ -34,9 +49,10 @@ for line in open('reviews.json'):
 for line in open('restaurants.json'):
     r = json.loads(line)
     reviewers = reviewers_for_rest[r['business_id']]
-    Restaurant(r['name'], r['stars'], reviewers)
+    Restaurant(r['name'], r['stars'], sorted(reviewers))
 
-
-results = search('Thai')
-for r in results:
-    print(r, 'shares reviewers with', r.similar(3))
+while True:
+    print('> ', end='')
+    results = search(input().strip())
+    for r in results:
+        print(r, 'shares reviewers with', r.similar(3))
